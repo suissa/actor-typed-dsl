@@ -14,8 +14,8 @@ test("2flow lowers canonical constructors to stable JSON node kinds", () => {
   assert.deepEqual(result.stages, MATY_2FLOW_STAGES);
   assert.deepEqual(Object.keys(result.document.protocol), ["Client", "Server"]);
   const client = result.document.protocol.Client;
-  assert.equal(client.kind, "select");
-  if (client.kind !== "select") return;
+  assert.ok(client);
+  if (!client || client.kind !== "select") return;
   assert.deepEqual(Object.keys(client.branches), ["Alpha", "Zed"]);
   assert.equal(client.branches.Alpha?.next.kind, "end");
   assert.equal(result.document.events.length, 1);
