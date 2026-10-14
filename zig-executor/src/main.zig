@@ -123,8 +123,7 @@ fn execute(allocator: Allocator, document: Value) !void {
     cursor = resolveNode(cursor, &env, &fuel);
     const final_kind = requireString(cursor, "kind");
     const stdout = std.io.getStdOut().writer();
-    try stdout.print("{{\"ok\":true,\"role\":\"{s}\",\"events_executed\":{d},\"state\":\"{s}\"}}\n", .{
-        role,
+    try stdout.print("{{\"ok\":true,\"events_executed\":{d},\"state\":\"{s}\"}}\n", .{
         events_value.array.items.len,
         final_kind,
     });
