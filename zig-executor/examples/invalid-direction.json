@@ -1,0 +1,23 @@
+{
+  "protocol": {
+    "Client": {
+      "kind": "select",
+      "peer": "Server",
+      "branches": {
+        "Ping": {
+          "payload": "Unit",
+          "next": { "kind": "end" }
+        }
+      }
+    }
+  },
+  "role": "Client",
+  "events": [
+    {
+      "action": "receive",
+      "peer": "Server",
+      "label": "Ping",
+      "payload": "Unit"
+    }
+  ]
+}
