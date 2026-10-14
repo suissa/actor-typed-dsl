@@ -62,6 +62,10 @@ fn resolveNode(node_input: Value, env: *std.StringHashMap(Value), fuel: *usize) 
 }
 
 fn execute(allocator: Allocator, document: Value) !void {
+    var arena = std.heap.ArenaAllocator.init(allocator);
+    defer arena.deinit();
+    const runtime_allocator = arena.allocator();
+
     const contract = stringField(document, "contract") orelse "";
     const version = stringField(document, "contractVersion") orelse "";
     if (!std.mem.eql(u8, contract, "actor-typed-dsl.session-runtime") or
@@ -77,7 +81,7 @@ fn execute(allocator: Allocator, document: Value) !void {
     if (events_value != .array) fail("'events' must be an array");
     var cursor = protocol.object.get(role) orelse fail("role is not defined in protocol");
 
-    var env = std.StringHashMap(Value).init(allocator);
+    var env = std.StringHashMap(Value).init(runtime_allocator);
     defer env.deinit();
 
     for (events_value.array.items, 0..) |event, index| {
@@ -109,7 +113,7 @@ fn execute(allocator: Allocator, document: Value) !void {
             cursor = next;
         } else {
             // An omitted continuation is the canonical shorthand for end().
-            var end_node = std.json.ObjectMap.init(allocator);
+            var end_node = std.json.ObjectMap.init(runtime_allocator);
             try end_node.put("kind", .{ .string = "end" });
             cursor = .{ .object = end_node };
         }
