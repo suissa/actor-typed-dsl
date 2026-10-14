@@ -1,4 +1,6 @@
 {
+  "contract": "actor-typed-dsl.session-runtime",
+  "contractVersion": "1.0.0",
   "protocol": {
     "Client": {
       "kind": "select",
