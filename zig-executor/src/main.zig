@@ -27,6 +27,14 @@ fn requireString(value: Value, name: []const u8) []const u8 {
     return stringField(value, name) orelse fail(name);
 }
 
+fn validPayload(name: []const u8) bool {
+    const supported = [_][]const u8{ "Unit", "Bool", "Int", "String", "Float", "Bytes" };
+    for (supported) |candidate| {
+        if (std.mem.eql(u8, name, candidate)) return true;
+    }
+    return false;
+}
+
 fn resolveNode(node_input: Value, env: *std.StringHashMap(Value), fuel: *usize) Value {
     var node = node_input;
     while (true) {
@@ -54,6 +62,14 @@ fn resolveNode(node_input: Value, env: *std.StringHashMap(Value), fuel: *usize) 
 }
 
 fn execute(allocator: Allocator, document: Value) !void {
+    const contract = stringField(document, "contract") orelse "";
+    const version = stringField(document, "contractVersion") orelse "";
+    if (!std.mem.eql(u8, contract, "actor-typed-dsl.session-runtime") or
+        !std.mem.eql(u8, version, "1.0.0"))
+    {
+        fail("unsupported runtime contract or contract version");
+    }
+
     const protocol = field(document, "protocol") orelse fail("document is missing 'protocol'");
     if (protocol != .object) fail("'protocol' must be an object");
     const role = requireString(document, "role");
@@ -73,7 +89,7 @@ fn execute(allocator: Allocator, document: Value) !void {
         const peer = requireString(event, "peer");
         const label = requireString(event, "label");
         const payload = requireString(event, "payload");
-        const expected_action: []const u8 = if (std.mem.eql(u8, kind, "select")) "send" else "receive";
+        const expected_action: []const u8 = if (std.mem.eql(u8, kind, "select")) "send" else if (std.mem.eql(u8, kind, "offer")) "receive" else fail("invalid session node");
 
         if (!std.mem.eql(u8, action, expected_action)) {
             std.debug.print("event {d}: action '{s}' is invalid for node '{s}' (expected '{s}')\n", .{ index, action, kind, expected_action });
@@ -86,10 +102,12 @@ fn execute(allocator: Allocator, document: Value) !void {
         if (branches_value != .object) fail("'branches' must be an object");
         const branch_value = branches_value.object.get(label) orelse fail("event label is not allowed by current session state");
         const expected_payload = requireString(branch_value, "payload");
+        if (!validPayload(expected_payload)) fail("branch declares an unsupported payload type");
         if (!std.mem.eql(u8, payload, expected_payload)) fail("event payload type does not match branch contract");
 
-        cursor = field(branch_value, "next") orelse .{ .object = std.json.ObjectMap.init(allocator) };
-        if (field(branch_value, "next") == null) {
+        if (field(branch_value, "next")) |next| {
+            cursor = next;
+        } else {
             // An omitted continuation is the canonical shorthand for end().
             var end_node = std.json.ObjectMap.init(allocator);
             try end_node.put("kind", .{ .string = "end" });
@@ -120,10 +138,7 @@ pub fn main() !void {
     const bytes = try std.fs.cwd().readFileAlloc(allocator, args[1], max_input_bytes);
     defer allocator.free(bytes);
 
-    const parsed = std.json.parseFromSlice(Value, allocator, bytes, .{
-        .allocate = .alloc_always,
-        .ignore_unknown_fields = false,
-    }) catch fail("input is not valid JSON");
+    const parsed = std.json.parseFromSlice(Value, allocator, bytes, .{}) catch fail("input is not valid JSON");
     defer parsed.deinit();
 
     try execute(allocator, parsed.value);
