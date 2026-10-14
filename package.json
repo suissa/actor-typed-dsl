@@ -1,0 +1,17 @@
+{
+  "name": "@suissa/actor-typed-dsl",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "Executable session-type DSL inspired by Maty and multiparty session types for actor systems.",
+  "exports": { ".": "./dist/session.js" },
+  "types": "./dist/session.d.ts",
+  "scripts": {
+    "clean": "node -e \"import('node:fs').then(fs=>fs.rmSync('dist',{recursive:true,force:true}))\"",
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test dist-test/**/*.test.js"
+  },
+  "devDependencies": { "typescript": "^5.8.3", "@types/node": "^22.15.30" },
+  "engines": { "node": ">=22" },
+  "license": "MIT"
+}
