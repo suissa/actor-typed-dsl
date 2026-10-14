@@ -1,0 +1,63 @@
+{
+  "contract": "actor-typed-dsl.session-runtime",
+  "contractVersion": "1.0.0",
+  "protocol": {
+    "Client": {
+      "kind": "select",
+      "peer": "Server",
+      "branches": {
+        "Ping": {
+          "payload": "Unit",
+          "next": {
+            "kind": "select",
+            "peer": "Server",
+            "branches": {
+              "Quit": {
+                "payload": "Unit",
+                "next": {
+                  "kind": "end"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Server": {
+      "kind": "offer",
+      "peer": "Client",
+      "branches": {
+        "Ping": {
+          "payload": "Unit",
+          "next": {
+            "kind": "offer",
+            "peer": "Client",
+            "branches": {
+              "Quit": {
+                "payload": "Unit",
+                "next": {
+                  "kind": "end"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "role": "Client",
+  "events": [
+    {
+      "action": "send",
+      "peer": "Server",
+      "label": "Ping",
+      "payload": "Unit"
+    },
+    {
+      "action": "send",
+      "peer": "Server",
+      "label": "Quit",
+      "payload": "Unit"
+    }
+  ]
+}
