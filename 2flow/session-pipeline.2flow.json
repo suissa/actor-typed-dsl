@@ -1,0 +1,67 @@
+{
+  "contract": "actor-typed-dsl.session-runtime",
+  "contractVersion": "1.0.0",
+  "flow": "maty-session-to-zig",
+  "flowVersion": "1.0.0",
+  "description": "Deterministic, fail-closed transformation from canonical Maty constructors to the Zig runtime document.",
+  "input": "CanonicalSessionProtocol",
+  "output": "SessionRuntimeDocumentV1",
+  "stages": [
+    {
+      "id": "parse",
+      "operation": "session.parseCanonicalTree",
+      "input": "CanonicalSessionProtocol",
+      "output": "ParsedSessionProtocol",
+      "onFailure": "stop"
+    },
+    {
+      "id": "validate",
+      "operation": "session.validateProtocol",
+      "input": "ParsedSessionProtocol",
+      "output": "ValidatedSessionProtocol",
+      "requires": ["parse"],
+      "onFailure": "stop"
+    },
+    {
+      "id": "normalize",
+      "operation": "session.normalize",
+      "input": "ValidatedSessionProtocol",
+      "output": "NormalizedSessionProtocol",
+      "requires": ["validate"],
+      "onFailure": "stop"
+    },
+    {
+      "id": "lower",
+      "operation": "session.lowerJsonV1",
+      "input": "NormalizedSessionProtocol",
+      "output": "SessionRuntimeDocumentV1",
+      "requires": ["normalize"],
+      "onFailure": "stop"
+    },
+    {
+      "id": "execute",
+      "operation": "zig.sessionRuntime.execute",
+      "input": "SessionRuntimeDocumentV1",
+      "output": "SessionExecutionResult",
+      "requires": ["lower"],
+      "onFailure": "stop"
+    }
+  ],
+  "runtimeDocument": {
+    "protocol": "role-to-session-node map",
+    "role": "role whose local session is executed",
+    "events": "ordered array of { action, peer, label, payload }",
+    "actions": {
+      "send": "allowed only when current node kind is select",
+      "receive": "allowed only when current node kind is offer"
+    },
+    "payloadTypes": ["Unit", "Bool", "Int", "String", "Float", "Bytes"]
+  },
+  "invariants": [
+    "Stages run in declared order.",
+    "A failed stage prevents all dependent stages from running.",
+    "The runtime document is JSON and contains named constructor kinds, never algebraic session symbols.",
+    "Every event must match the current peer, action direction, label, and payload type.",
+    "A valid event advances the cursor to the branch continuation exactly once."
+  ]
+}
