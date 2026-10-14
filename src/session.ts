@@ -157,6 +157,9 @@ function checkDuality(
     return;
   }
   if (a.kind === "var" || b.kind === "var") return;
+  // `unfold` is intentionally typed as Session, so narrow the remaining
+  // union before accessing communication-only fields.
+  if ((a.kind !== "select" && a.kind !== "offer") || (b.kind !== "select" && b.kind !== "offer")) return;
   const pairKey = JSON.stringify([a, b]);
   if (seen.has(pairKey)) return;
   seen.add(pairKey);
